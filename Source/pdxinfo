@@ -1,0 +1,6 @@
+name=Bomb Damage Effect Computer
+author=Gary Briggs <gbriggs@rand.org>
+description=Tick Tick Boom
+bundleID=org.rand.bombdamageeffect
+version=1.0
+buildNumber=1
