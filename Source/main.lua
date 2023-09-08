@@ -74,8 +74,6 @@ end
 
 myGameSetUp()
 
-local DEG_TO_RAD = 0.01745329
-
 local TOTAL_ANGLE_RANGE = 330
 
 -- `playdate.update()` is the heart of every Playdate game.
@@ -89,6 +87,7 @@ function playdate.update()
         while(theta_deg > 360) do
             theta_deg = theta_deg - 360
         end
+        local theta_rad = math.rad(theta_deg)
         
         local v1 = playdate.geometry.vector2D.newPolar(circle_r-(5 * length_factor), theta_deg)
         local v2 = playdate.geometry.vector2D.newPolar(circle_r+(2 * length_factor), theta_deg)
@@ -102,8 +101,8 @@ function playdate.update()
 
             local text_width, text_height = gfx.getTextSize(label)
             
-            local font_height_fudge = math.sin(theta_deg * DEG_TO_RAD / 2.0) * text_height
-            local font_width_fudge = math.sin(theta_deg * DEG_TO_RAD) * text_width
+            local font_height_fudge = math.sin(theta_rad / 2.0) * text_height
+            local font_width_fudge = math.sin(theta_rad) * text_width
 
             gfx.drawTextAligned(label, start_p.x - font_width_fudge + font_v.x, start_p.y - font_height_fudge + font_v.y, kTextAlignment.center)
         end
