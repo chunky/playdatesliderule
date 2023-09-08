@@ -169,31 +169,33 @@ function playdate.update()
         
     end
 
+    local function drawCalculator()
+        local h = playdate.display.getHeight()
+        local w = playdate.display.getWidth()
+        
+        local center_x = h/2 -- w/2
+        local center_y = h/2
+        local center_p = playdate.geometry.point.new(center_x, center_y)
+
+        gfx.setLineWidth(1)
+
+        local outer_radius = math.min(h/2, w/2)-8
+        local inner_radius = math.min(h/2, w/2)-40
+
+        local outer_mode = axis_options[outer_axis]
+        local inner_mode = axis_options[inner_axis]
+
+        drawAxis(center_p, outer_radius, outer_mode, outer_angle)
+        drawAxis(center_p, inner_radius, inner_mode, inner_angle)
+
+        local hair_radius = math.min(h/2, w/2) + 10
+        local hair_v = playdate.geometry.vector2D.newPolar(hair_radius, hair_angle)
+        local hair_end = center_p + hair_v
+        gfx.drawLine(center_p.x, center_p.y, hair_end.x, hair_end.y)
+    end
+
     playdate.graphics.clear()
-
-    local h = playdate.display.getHeight()
-    local w = playdate.display.getWidth()
-    
-    local center_x = w/2
-    local center_y = h/2
-    local center_p = playdate.geometry.point.new(center_x, center_y)
-
-    gfx.setLineWidth(1)
-
-    local outer_radius = math.min(h/2, w/2)-8
-    local inner_radius = math.min(h/2, w/2)-40
-
-    local outer_mode = axis_options[outer_axis]
-    local inner_mode = axis_options[inner_axis]
-
-    drawAxis(center_p, outer_radius, outer_mode, outer_angle)
-    drawAxis(center_p, inner_radius, inner_mode, inner_angle)
-
-    local hair_radius = math.min(h/2, w/2) + 10
-    local hair_v = playdate.geometry.vector2D.newPolar(hair_radius, hair_angle)
-    local hair_end = center_p + hair_v
-    gfx.drawLine(center_p.x, center_p.y, hair_end.x, hair_end.y)
-
+    drawCalculator()
 --    gfx.sprite.update()
     playdate.timer.updateTimers()
 

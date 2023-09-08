@@ -1,6 +1,8 @@
-name=Bomb Damage Effect Computer
-author=Gary Briggs <gbriggs@rand.org>
-description=Tick Tick Boom
-bundleID=org.rand.bombdamageeffect
+name=Circular Slide Rule
+author=Gary Briggs <chunky@icculus.org>
+description=Circular Slide Rule
+bundleID=org.icculus.chunky.sliderule
 version=1.0
 buildNumber=1
+imagePath=SystemAssets
+
