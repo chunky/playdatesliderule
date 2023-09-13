@@ -22,6 +22,10 @@ used slide rules to do maths: https://en.wikipedia.org/wiki/Slide_rule
 
 Because slide rules are awesome.
 
+## Fonts
+
+The fonts are borrowed from https://devforum.play.date/t/some-small-fonts/1356
+Created by Donald Hays / Dovuro
 
 Cheers,  
 Gary <chunky@icculus.org>
