@@ -18,36 +18,32 @@ local axis_options = { "x", "x^2", "lin", "pi" }
 local outer_axis = axis_options[1]
 local inner_axis = axis_options[1]
 
+local axis_funcs = {
+    ["x"] = function(t)
+        local v = playdate.math.lerp(1.0, base, t)
+        return math.log(v, base), v
+    end,
+    ["x^2"] = function(t)
+        local v = playdate.math.lerp(0.0, base^2, t^2)
+        return math.log(v, base), v
+    end,
+    ["lin"] = function(t)
+        local v = playdate.math.lerp(0.0, base, t)
+        return v, v
+    end,
+    ["pi"] = function(t)
+        local v = playdate.math.lerp(1.0, math.pi, t)
+        return math.log(v, base), v
+    end 
+}
+
 function reset_settings()
     base = default_base
     inner_angle = 0
     outer_angle = 0
     hair_angle = 0
-end
-
-function create_axis_func(axis_option)
-    if "x" == axis_option then
-        return function(t)
-            local v = playdate.math.lerp(1.0, base * 1.0, t)
-            return math.log(v, base), v
-        end
-    elseif "x^2" == axis_option then
-        return function(t)
-            local v = playdate.math.lerp(0.0, base^2, math.sqrt(t))
-            return math.log(v, base), v
-        end
-    elseif "pi" == axis_option then
-        return function(t)
-            local v = playdate.math.lerp(0.0, math.pi, t)
-            return math.log(v, base), v
-        end
-    elseif "lin" == axis_option then
-        return function(t)
-            local v = playdate.math.lerp(0.0, 10.0, t)
-            return v, v
-        end
-    end
-    return function(t) return t end
+    inner_axis = axis_options[1]
+    outer_axis = axis_options[1]
 end
 
 function myGameSetUp()
@@ -140,7 +136,7 @@ function playdate.update()
         if 0 == depth then
             gfx.drawArc(center_p.x, center_p.y, circle_r, 0 + rotate_angle, full_max_angle + rotate_angle)
         end
-        if 3 <= depth then
+        if 10 <= depth then
             return
         end
 
@@ -150,14 +146,14 @@ function playdate.update()
         local max_angle = full_max_angle * t_func(t_max) / scaled_max_v
 
         -- Ticks less than approx this many pixels apart aren't useful
-        if circle_r * math.asin(math.rad(max_angle-min_angle)) < 10 then return end
+        if circle_r * math.asin(math.rad(max_angle-min_angle)) < 20.0 then return end
 
         local last_t = t_min
-        local dt = ((t_max-t_min)/10.0)
+        local dt = ((t_max-t_min)/base)
         
         -- This is where floating point silliness kicks in
         --  Fudge everything by a substantial factor, then shrink back inside the loop
-        local ieee_factor = 10^(depth+3)
+        local ieee_factor = base^(depth+3)
         local t_min_x = math.floor(t_min * ieee_factor)
         local t_max_x = math.floor(t_max * ieee_factor)
         local dt_x = math.floor(dt * ieee_factor)
@@ -174,7 +170,7 @@ function playdate.update()
             
             local strlabel = nil
             if 0 >= depth then
-                strlabel = string.format("%.0f", v * 10^(depth))
+                strlabel = string.format("%.0f", v * base^(depth))
             end
             drawTick(value_angle, circle_r, center_p, strlabel, 0, rotate_angle, 2.0 / (depth + 2))
 
@@ -198,13 +194,11 @@ function playdate.update()
 
         local TOTAL_ANGLE_RANGE = 330
 
-        local o_func = create_axis_func(outer_axis)
+        local o_func = axis_funcs[outer_axis]
         drawAxis(o_func, center_p, outer_radius, outer_angle, 0.0, 1.0, o_func(1.0), TOTAL_ANGLE_RANGE, 0)
-        -- addLogConstants(func_Log(1, base), center_p, outer_radius, outer_angle, TOTAL_ANGLE_RANGE)
 
-        local i_func = create_axis_func(inner_axis)
+        local i_func = axis_funcs[inner_axis]
         drawAxis(i_func, center_p, inner_radius, inner_angle, 0.0, 1.0, i_func(1.0), TOTAL_ANGLE_RANGE, 0)
-        -- addLogConstants(center_p, inner_radius, inner_angle, TOTAL_ANGLE_RANGE)
 
         local hair_radius = math.min(h/2, w/2) + 10
         local hair_v = playdate.geometry.vector2D.newPolar(hair_radius, hair_angle)
