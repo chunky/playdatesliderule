@@ -14,11 +14,40 @@ local outer_angle = 0
 local inner_angle = 0
 local hair_angle = 0
 
+local axis_options = { "x", "x^2", "lin", "pi" }
+local outer_axis = axis_options[1]
+local inner_axis = axis_options[1]
+
 function reset_settings()
     base = default_base
     inner_angle = 0
     outer_angle = 0
     hair_angle = 0
+end
+
+function create_axis_func(axis_option)
+    if "x" == axis_option then
+        return function(t)
+            local v = playdate.math.lerp(1.0, base * 1.0, t)
+            return math.log(v, base), v
+        end
+    elseif "x^2" == axis_option then
+        return function(t)
+            local v = playdate.math.lerp(0.0, base^2, math.sqrt(t))
+            return math.log(v, base), v
+        end
+    elseif "pi" == axis_option then
+        return function(t)
+            local v = playdate.math.lerp(0.0, math.pi, t)
+            return math.log(v, base), v
+        end
+    elseif "lin" == axis_option then
+        return function(t)
+            local v = playdate.math.lerp(0.0, 10.0, t)
+            return v, v
+        end
+    end
+    return function(t) return t end
 end
 
 function myGameSetUp()
@@ -28,6 +57,9 @@ function myGameSetUp()
 
     local menu = playdate.getSystemMenu()
     menu:addMenuItem("Reset", function() reset_settings() end)
+
+    menu:addOptionsMenuItem("Outer Axis", axis_options, outer_axis, function(newval) outer_axis = newval end)
+    menu:addOptionsMenuItem("Inner Axis", axis_options, inner_axis, function(newval) inner_axis = newval end)
 
     local myInputHandlers = {
 
@@ -120,24 +152,24 @@ function playdate.update()
         -- Ticks less than approx this many pixels apart aren't useful
         if circle_r * math.asin(math.rad(max_angle-min_angle)) < 10 then return end
 
-        local last_t = 0.0
+        local last_t = t_min
         local dt = ((t_max-t_min)/10.0)
         
         -- This is where floating point silliness kicks in
         --  Fudge everything by a substantial factor, then shrink back inside the loop
-        local iee_factor = 10^(depth+3)
-        local t_min_x = math.floor(t_min * iee_factor)
-        local t_max_x = math.floor(t_max * iee_factor)
-        local dt_x = math.floor(dt * iee_factor)
+        local ieee_factor = 10^(depth+3)
+        local t_min_x = math.floor(t_min * ieee_factor)
+        local t_max_x = math.floor(t_max * ieee_factor)
+        local dt_x = math.floor(dt * ieee_factor)
+        if 0 >= dt_x then return end
 
         for t_x=t_min_x, t_max_x, dt_x do
-            local t = t_x / iee_factor
+            local t = t_x / ieee_factor
             local scaled_v, v = t_func(t)
 
             local value = scaled_v
             local value_angle = full_max_angle * value / scaled_max_v
 
-            print("depth: " .. depth .. " Value: " .. value .. " Angle: " .. value_angle)
             drawAxis(t_func, center_p, circle_r, rotate_angle, last_t, t, full_max_value, full_max_angle, depth+1)
             
             local strlabel = nil
@@ -166,27 +198,12 @@ function playdate.update()
 
         local TOTAL_ANGLE_RANGE = 330
 
-        local function func_Log(minval, maxval)
-            return function(t)
-                local v = playdate.math.lerp(minval, maxval, t)
-                return math.log(v, base), v
-            end
-        end
-
-        local function func_Lin(minval, maxval)
-            return function(t)
-                local v = playdate.math.lerp(minval, maxval, t)
-                return v, v
-            end
-        end
-
-        local f = func_Lin(0.0, base)
-        -- local f = func_Log(1.0, base)
-        
-        drawAxis(f, center_p, outer_radius, outer_angle, 0.0, 1.0, f(1.0), TOTAL_ANGLE_RANGE, 0)
+        local o_func = create_axis_func(outer_axis)
+        drawAxis(o_func, center_p, outer_radius, outer_angle, 0.0, 1.0, o_func(1.0), TOTAL_ANGLE_RANGE, 0)
         -- addLogConstants(func_Log(1, base), center_p, outer_radius, outer_angle, TOTAL_ANGLE_RANGE)
 
-        drawAxis(f, center_p, inner_radius, inner_angle, 0.0, 1.0, f(1.0), TOTAL_ANGLE_RANGE, 0)
+        local i_func = create_axis_func(inner_axis)
+        drawAxis(i_func, center_p, inner_radius, inner_angle, 0.0, 1.0, i_func(1.0), TOTAL_ANGLE_RANGE, 0)
         -- addLogConstants(center_p, inner_radius, inner_angle, TOTAL_ANGLE_RANGE)
 
         local hair_radius = math.min(h/2, w/2) + 10
