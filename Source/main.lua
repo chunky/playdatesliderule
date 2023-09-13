@@ -2,6 +2,7 @@ import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
+import "CoreLibs/math"
 
 local gfx <const> = playdate.graphics
 
@@ -22,7 +23,7 @@ end
 
 function myGameSetUp()
 
-    local myfont = gfx.font.new("Fonts/font-rains-1x")
+    local myfont = gfx.font.new("Fonts/Nano Sans")
     gfx.setFont(myfont)
 
     local menu = playdate.getSystemMenu()
@@ -36,6 +37,14 @@ function myGameSetUp()
 
         rightButtonDown = function()
             base = math.max(base-1, 2)
+        end,
+
+        AButtonDown = function()
+            outer_angle = playdate.getCrankPosition()
+        end,
+
+        BButtonDown = function()
+            inner_angle = playdate.getCrankPosition()
         end,
 
         cranked = function()
@@ -93,7 +102,8 @@ function playdate.update()
     end
 
     -- Fill in the axes for values in range min to max
-    local function drawLogAxis(center_p, circle_r, rotate_angle, min_value, max_value, delta_value, full_max_value, full_max_angle, depth)
+    -- Valuefunc converts values in the range 0..1 to scaled axis numbers 
+    local function drawAxis(t_func, center_p, circle_r, rotate_angle, t_min, t_max, full_max_value, full_max_angle, depth)
 
         if 0 == depth then
             gfx.drawArc(center_p.x, center_p.y, circle_r, 0 + rotate_angle, full_max_angle + rotate_angle)
@@ -102,32 +112,42 @@ function playdate.update()
             return
         end
 
+        local scaled_max_v, max_v = t_func(1.0)
 
-        local min_angle = full_max_angle * math.log(min_value, base) / math.log(full_max_value, base)
-        local max_angle = full_max_angle * math.log(max_value, base) / math.log(full_max_value, base)
-        if 10 > max_angle - min_angle then return end
+        local min_angle = full_max_angle * t_func(t_min) / scaled_max_v
+        local max_angle = full_max_angle * t_func(t_max) / scaled_max_v
 
-        local last_value = min_value
-        for value=min_value, max_value, delta_value do
-            local value_angle = full_max_angle * math.log(value, base) / math.log(full_max_value, base)
+        -- Ticks less than approx this many pixels apart aren't useful
+        if circle_r * math.asin(math.rad(max_angle-min_angle)) < 10 then return end
+
+        local last_t = 0.0
+        local dt = ((t_max-t_min)/10.0)
+        
+        -- This is where floating point silliness kicks in
+        --  Fudge everything by a substantial factor, then shrink back inside the loop
+        local iee_factor = 10^(depth+3)
+        local t_min_x = math.floor(t_min * iee_factor)
+        local t_max_x = math.floor(t_max * iee_factor)
+        local dt_x = math.floor(dt * iee_factor)
+
+        for t_x=t_min_x, t_max_x, dt_x do
+            local t = t_x / iee_factor
+            local scaled_v, v = t_func(t)
+
+            local value = scaled_v
+            local value_angle = full_max_angle * value / scaled_max_v
 
             print("depth: " .. depth .. " Value: " .. value .. " Angle: " .. value_angle)
-            drawLogAxis(center_p, circle_r, rotate_angle, last_value, value, delta_value / 10, full_max_value, full_max_angle, depth+1)
+            drawAxis(t_func, center_p, circle_r, rotate_angle, last_t, t, full_max_value, full_max_angle, depth+1)
             
-            local strlabel = string.format("%.0f", delta_value * math.floor(value / delta_value))
-            if(depth > 0) then strlabel = nil end
+            local strlabel = nil
+            if 0 >= depth then
+                strlabel = string.format("%.0f", v * 10^(depth))
+            end
             drawTick(value_angle, circle_r, center_p, strlabel, 0, rotate_angle, 2.0 / (depth + 2))
 
-            last_value = value
+            last_t = t
         end
-    end
-
-    local function addLogConstants(center_p, circle_r, rotate_angle, end_angle)
-        local pi_angle = end_angle * math.log(math.pi, base)
-        drawTick(pi_angle, circle_r, center_p, nil, 0.0, rotate_angle, 2.75)
-
-        local e_angle = end_angle * math.log(math.exp(1), base)
-        drawTick(e_angle, circle_r, center_p, nil, 0.0, rotate_angle, 2.75)
     end
 
     local function drawCalculator()
@@ -145,11 +165,29 @@ function playdate.update()
 
 
         local TOTAL_ANGLE_RANGE = 330
-        drawLogAxis(center_p, outer_radius, outer_angle, 1.0, base*1.0, 1.0, base*1.0, TOTAL_ANGLE_RANGE, 0)
-        addLogConstants(center_p, outer_radius, outer_angle, TOTAL_ANGLE_RANGE)
 
-        drawLogAxis(center_p, inner_radius, inner_angle, 1.0, base*1.0, 1.0, base*1.0, TOTAL_ANGLE_RANGE, 0)
-        addLogConstants(center_p, inner_radius, inner_angle, TOTAL_ANGLE_RANGE)
+        local function func_Log(minval, maxval)
+            return function(t)
+                local v = playdate.math.lerp(minval, maxval, t)
+                return math.log(v, base), v
+            end
+        end
+
+        local function func_Lin(minval, maxval)
+            return function(t)
+                local v = playdate.math.lerp(minval, maxval, t)
+                return v, v
+            end
+        end
+
+        local f = func_Lin(0.0, base)
+        -- local f = func_Log(1.0, base)
+        
+        drawAxis(f, center_p, outer_radius, outer_angle, 0.0, 1.0, f(1.0), TOTAL_ANGLE_RANGE, 0)
+        -- addLogConstants(func_Log(1, base), center_p, outer_radius, outer_angle, TOTAL_ANGLE_RANGE)
+
+        drawAxis(f, center_p, inner_radius, inner_angle, 0.0, 1.0, f(1.0), TOTAL_ANGLE_RANGE, 0)
+        -- addLogConstants(center_p, inner_radius, inner_angle, TOTAL_ANGLE_RANGE)
 
         local hair_radius = math.min(h/2, w/2) + 10
         local hair_v = playdate.geometry.vector2D.newPolar(hair_radius, hair_angle)
