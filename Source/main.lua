@@ -20,11 +20,11 @@ local inner_axis = axis_options[1]
 
 local axis_funcs = {
     ["x"] = function(t)
-        local v = playdate.math.lerp(1.0, base, t)
+        local v = playdate.math.lerp(0.0001, base, t)
         return math.log(v, base), v
     end,
     ["x^2"] = function(t)
-        local v = playdate.math.lerp(0.0, base^2, t^2)
+        local v = playdate.math.lerp(0.0001, base^2, t^2)
         return math.log(v, base), v
     end,
     ["lin"] = function(t)
@@ -37,6 +37,14 @@ local axis_funcs = {
     end 
 }
 
+function test_func(axis_name)
+    local f = axis_funcs[axis_name]
+    for t=0.0, 1.01, 0.1 do
+        local x_scaled, x = f(t)
+        print("Axis " .. axis_name .. " t=" .. t .. "  x_scaled=" .. x_scaled .. "   x=" .. x)
+    end
+end
+
 function reset_settings()
     base = default_base
     inner_angle = 0
@@ -47,7 +55,6 @@ function reset_settings()
 end
 
 function myGameSetUp()
-
     local myfont = gfx.font.new("Fonts/Nano Sans")
     gfx.setFont(myfont)
 
@@ -177,18 +184,20 @@ function playdate.update()
         for t_x=t_min_x, t_max_x, dt_x do
             local t = t_x / ieee_factor
             local scaled_v, v = t_func(t)
+            if scaled_v >= 0 then
 
-            local value_angle = full_max_angle * (scaled_v - scaled_min_v) / (scaled_max_v - scaled_min_v)
+                local value_angle = full_max_angle * (scaled_v) / (scaled_max_v)
 
-            drawAxis(t_func, circle_r, rotate_angle, last_t, t, full_max_angle, depth+1, transform)
-            
-            local strlabel = nil
-            if 0 >= depth then
-                strlabel = string.format("%.0f", v * base^(depth))
+                drawAxis(t_func, circle_r, rotate_angle, last_t, t, full_max_angle, depth+1, transform)
+                
+                local strlabel = nil
+                if 0 >= depth then
+                    strlabel = string.format("%.0f", v * base^(depth))
+                end
+                drawTick(value_angle, circle_r, strlabel, 0, rotate_angle, 2.0 / (depth + 2), transform)
+
+                last_t = t
             end
-            drawTick(value_angle, circle_r, strlabel, 0, rotate_angle, 2.0 / (depth + 2), transform)
-
-            last_t = t
         end
     end
 
