@@ -102,6 +102,23 @@ local axes_by_name = {}
 for _, a in ipairs(axes) do
     axis_options[#axis_options+1] = a.name
     axes_by_name[a.name] = a
+
+    -- Implement value caching
+    local forward_orig = a.forward
+    local cache = {}
+    function forward_memoised(t)
+        t_key = string.format("%.2f", t)
+        if cache[t_key] then
+            tuple = cache[t_key]
+            return tuple[1], tuple[2]
+        else
+            a, b = forward_orig(t)
+            tuple = {a, b}
+            cache[t_key] = tuple
+            return a, b
+        end
+    end
+    a.forward = forward_memoised
 end
 
 local outer_axis = axes[1]
@@ -126,7 +143,7 @@ function reset_settings()
 end
 
 function myGameSetUp()
-    local myfont = gfx.font.new("Fonts/Nano Sans")
+    local myfont = gfx.font.new("Fonts/font-rains-1x")
     gfx.setFont(myfont)
 
     local menu = playdate.getSystemMenu()
@@ -222,7 +239,7 @@ function playdate.update()
             transform:transformPolygon(poly)
             gfx.drawPolygon(poly)
         end
-        if 10 <= depth then
+        if 2 <= depth then
             return
         end
 
