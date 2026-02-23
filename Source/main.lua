@@ -20,20 +20,29 @@ local inner_axis = axis_options[1]
 
 local axis_funcs = {
     ["x"] = function(t)
-        local v = playdate.math.lerp(0.0001, base, t)
-        return math.log(v, base), v
+        local v = t * base  -- t goes 0, 0.1, 0.2, ..., 1.0 → v goes 0, 1, 2, ..., 10
+        if v < 0.5 then
+            return -1, v  -- skip values below 0.5 (they would round to 0)
+        end
+        return math.log(v, base), v  -- logarithmic position, integer values
     end,
     ["x^2"] = function(t)
-        local v = playdate.math.lerp(0.0001, base^2, t^2)
-        return math.log(v, base), v
+        local v = t * base^2  -- t goes 0, 0.1, ..., 1.0 → v goes 0, 10, 20, ..., 100
+        if v < 0.5 then
+            return -1, v  -- skip values below 0.5
+        end
+        return math.log(v, base), v  -- logarithmic position
     end,
     ["lin"] = function(t)
         local v = playdate.math.lerp(0.0, base, t)
         return v, v
     end,
     ["pi"] = function(t)
-        local v = playdate.math.lerp(1.0, math.pi, t)
-        return math.log(v, base), v
+        local v = t * base  -- same as x scale
+        if v < 0.5 or v > math.pi then
+            return -1, v  -- only show values from 1 to π (approximately 1, 2, 3)
+        end
+        return math.log(v, base), v  -- logarithmic position
     end 
 }
 
