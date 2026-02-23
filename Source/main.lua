@@ -316,6 +316,12 @@ function playdate.update()
         local hair_end = hair_v
         local hairline = playdate.geometry.lineSegment.new(0.0, 0.0, hair_end.x, hair_end.y)
         transform:transformLineSegment(hairline)
+        local saved_width = gfx.getLineWidth()
+        gfx.setColor(gfx.kColorWhite)
+        gfx.setLineWidth(saved_width + 3)
+        gfx.drawLine(hairline)
+        gfx.setColor(gfx.kColorBlack)
+        gfx.setLineWidth(saved_width)
         gfx.drawLine(hairline)
     end
 
@@ -400,6 +406,13 @@ function playdate.update()
 
         drawAxis(inner_axis.forward, inner_axis.scaled_max(), inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform, -10)
         drawAxisLabel(inner_axis.name, inner_radius, inner_angle, transform)
+
+        -- Brand in the center
+        local brand = "Playdate\n\nSlide Rule"
+        local bw, bh = gfx.getTextSize(brand)
+        local center = playdate.geometry.point.new(0, 0)
+        transform:transformPoint(center)
+        gfx.drawTextAligned(brand, center.x, center.y - bh / 2, kTextAlignment.center)
 
         drawHair(outer_radius + 10, hair_angle, transform)
     end
