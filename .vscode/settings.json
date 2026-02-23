@@ -1,5 +1,4 @@
 {
-  "playdate-debug.sdkPath": "/home/chunky/PlaydateSDK-3.0.3",
   "playdate-debug.sourcePath": "./Source",
   "playdate-debug.outputPath": "./build/",
   "playdate-debug.productName": "SlideRule"
