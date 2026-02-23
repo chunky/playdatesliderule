@@ -56,6 +56,45 @@ local axes = {
         end,
         inverse = function(angle_frac) return base ^ angle_frac end,
     },
+    {
+        name = "sin",
+        func = function(t)
+            local v = t * 90  -- degrees, 0 to 90
+            if v <= 0 then return -1, v end
+            return math.log(math.sin(math.rad(v)), base) + 1, v
+        end,
+        inverse = function(angle_frac)
+            local sv = base ^ (angle_frac - 1)
+            if sv > 1 then return nil end
+            return math.deg(math.asin(sv))
+        end,
+    },
+    {
+        name = "cos",
+        func = function(t)
+            local v = (1 - t) * 90  -- degrees, 90 down to 0 (cos scale runs in reverse)
+            if v >= 90 then return -1, v end
+            local cv = math.cos(math.rad(v))
+            if cv <= 0 then return -1, v end
+            return math.log(cv, base) + 1, v
+        end,
+        inverse = function(angle_frac)
+            local cv = base ^ (angle_frac - 1)
+            if cv > 1 then return nil end
+            return math.deg(math.acos(cv))
+        end,
+    },
+    {
+        name = "tan",
+        func = function(t)
+            local v = t * 45  -- degrees, 0 to 45
+            if v <= 0 then return -1, v end
+            return math.log(math.tan(math.rad(v)), base) + 1, v
+        end,
+        inverse = function(angle_frac)
+            return math.deg(math.atan(base ^ (angle_frac - 1)))
+        end,
+    },
 }
 
 local axis_options = {}
