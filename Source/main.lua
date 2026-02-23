@@ -17,6 +17,7 @@ local hair_angle = 0
 local axes = {
     {
         name = "x",
+        scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * base  -- t goes 0, 0.1, 0.2, ..., 1.0 → v goes 0, 1, 2, ..., 10
             if v < 0.5 then
@@ -27,7 +28,18 @@ local axes = {
         inverse = function(angle_frac) return base ^ angle_frac end,
     },
     {
+        name = "1/x",
+        scaled_max = function() return 1 end,
+        forward = function(t)
+            local v = t * base
+            if v < 0.5 then return -1, v end
+            return 1 - math.log(v, base), v  -- reversed log position
+        end,
+        inverse = function(angle_frac) return base ^ (1 - angle_frac) end,
+    },
+    {
         name = "x^2",
+        scaled_max = function() return 2 end,
         forward = function(t)
             local v = t * base^2  -- t goes 0, 0.1, ..., 1.0 → v goes 0, 10, 20, ..., 100
             if v < 0.5 then
@@ -38,7 +50,18 @@ local axes = {
         inverse = function(angle_frac) return base ^ (angle_frac * 2) end,
     },
     {
+        name = "x^3",
+        scaled_max = function() return 3 end,
+        forward = function(t)
+            local v = t * base^3
+            if v < 0.5 then return -1, v end
+            return math.log(v, base), v
+        end,
+        inverse = function(angle_frac) return base ^ (angle_frac * 3) end,
+    },
+    {
         name = "lin",
+        scaled_max = function() return base end,
         forward = function(t)
             local v = playdate.math.lerp(0.0, base, t)
             return v, v
@@ -47,10 +70,11 @@ local axes = {
     },
     {
         name = "pi",
+        scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * base  -- same as x scale
             if v < 0.5 or v > math.pi then
-                return -1, v  -- only show values from 1 to π (approximately 1, 2, 3)
+                return -1, v  -- only show values from 1 to π
             end
             return math.log(v, base), v  -- logarithmic position
         end,
@@ -58,6 +82,7 @@ local axes = {
     },
     {
         name = "sin",
+        scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * 90  -- degrees, 0 to 90
             if v <= 0 then return -1, v end
@@ -71,6 +96,7 @@ local axes = {
     },
     {
         name = "cos",
+        scaled_max = function() return 1 end,
         forward = function(t)
             local v = (1 - t) * 90  -- degrees, 90 down to 0 (cos scale runs in reverse)
             if v >= 90 then return -1, v end
@@ -86,6 +112,7 @@ local axes = {
     },
     {
         name = "tan",
+        scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * 45  -- degrees, 0 to 45
             if v <= 0 then return -1, v end
@@ -223,7 +250,7 @@ function playdate.update()
 
     -- Fill in the axes for values in range min to max
     -- Valuefunc converts values in the range 0..1 to scaled axis numbers 
-    local function drawAxis(t_func, circle_r, rotate_angle, t_min, t_max, full_max_angle, depth, transform, label_radius_fudge)
+    local function drawAxis(t_func, scaled_max_v, circle_r, rotate_angle, t_min, t_max, full_max_angle, depth, transform, label_radius_fudge)
 
         if 0 == depth then
             -- Transforms don't work on arcs, but they do on polys.
@@ -243,9 +270,6 @@ function playdate.update()
             return
         end
 
-        local scaled_min_v, min_v = t_func(0.0)
-        local scaled_max_v, max_v = t_func(1.0)
-
         local min_angle = full_max_angle * t_min
         local max_angle = full_max_angle * t_max
 
@@ -254,7 +278,7 @@ function playdate.update()
 
         local last_t = t_min
         local dt = ((t_max-t_min)/base)
-        
+
         -- This is where floating point silliness kicks in
         --  Fudge everything by a substantial factor, then shrink back inside the loop
         local ieee_factor = 10^(depth+3)
@@ -270,8 +294,8 @@ function playdate.update()
 
                 local value_angle = full_max_angle * (scaled_v) / (scaled_max_v)
 
-                drawAxis(t_func, circle_r, rotate_angle, last_t, t, full_max_angle, depth+1, transform, label_radius_fudge)
-                
+                drawAxis(t_func, scaled_max_v, circle_r, rotate_angle, last_t, t, full_max_angle, depth+1, transform, label_radius_fudge)
+
                 local strlabel = nil
                 if 0 >= depth then
                     strlabel = string.format("%.0f", v * base^(depth))
@@ -335,10 +359,10 @@ function playdate.update()
 
         local total_angle = 330
 
-        drawAxis(outer_axis.forward, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform, 15)
+        drawAxis(outer_axis.forward, outer_axis.scaled_max(), outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform, 15)
         drawAxisLabel(outer_axis.name, outer_radius, outer_angle, transform)
 
-        drawAxis(inner_axis.forward, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform, -10)
+        drawAxis(inner_axis.forward, inner_axis.scaled_max(), inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform, -10)
         drawAxisLabel(inner_axis.name, inner_radius, inner_angle, transform)
 
         drawHair(outer_radius + 10, hair_angle, transform)
