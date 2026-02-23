@@ -17,7 +17,7 @@ local hair_angle = 0
 local axes = {
     {
         name = "x",
-        func = function(t)
+        forward = function(t)
             local v = t * base  -- t goes 0, 0.1, 0.2, ..., 1.0 → v goes 0, 1, 2, ..., 10
             if v < 0.5 then
                 return -1, v  -- skip values below 0.5 (they would round to 0)
@@ -28,7 +28,7 @@ local axes = {
     },
     {
         name = "x^2",
-        func = function(t)
+        forward = function(t)
             local v = t * base^2  -- t goes 0, 0.1, ..., 1.0 → v goes 0, 10, 20, ..., 100
             if v < 0.5 then
                 return -1, v  -- skip values below 0.5
@@ -39,7 +39,7 @@ local axes = {
     },
     {
         name = "lin",
-        func = function(t)
+        forward = function(t)
             local v = playdate.math.lerp(0.0, base, t)
             return v, v
         end,
@@ -47,7 +47,7 @@ local axes = {
     },
     {
         name = "pi",
-        func = function(t)
+        forward = function(t)
             local v = t * base  -- same as x scale
             if v < 0.5 or v > math.pi then
                 return -1, v  -- only show values from 1 to π (approximately 1, 2, 3)
@@ -58,7 +58,7 @@ local axes = {
     },
     {
         name = "sin",
-        func = function(t)
+        forward = function(t)
             local v = t * 90  -- degrees, 0 to 90
             if v <= 0 then return -1, v end
             return math.log(math.sin(math.rad(v)), base) + 1, v
@@ -71,7 +71,7 @@ local axes = {
     },
     {
         name = "cos",
-        func = function(t)
+        forward = function(t)
             local v = (1 - t) * 90  -- degrees, 90 down to 0 (cos scale runs in reverse)
             if v >= 90 then return -1, v end
             local cv = math.cos(math.rad(v))
@@ -86,7 +86,7 @@ local axes = {
     },
     {
         name = "tan",
-        func = function(t)
+        forward = function(t)
             local v = t * 45  -- degrees, 0 to 45
             if v <= 0 then return -1, v end
             return math.log(math.tan(math.rad(v)), base) + 1, v
@@ -318,10 +318,10 @@ function playdate.update()
 
         local total_angle = 330
 
-        drawAxis(outer_axis.func, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxis(outer_axis.forward, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform)
         drawAxisLabel(outer_axis.name, outer_radius, outer_angle, transform)
 
-        drawAxis(inner_axis.func, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxis(inner_axis.forward, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform)
         drawAxisLabel(inner_axis.name, inner_radius, inner_angle, transform)
 
         drawHair(outer_radius + 10, hair_angle, transform)
@@ -361,12 +361,12 @@ function playdate.update()
     local scale = 2.0
 
     local translate_focus = playdate.geometry.vector2D.newPolar(((inner_radius + outer_radius) / 2.0) * scale, hair_angle)
-    if playdate.buttonIsPressed(playdate.kButtonA) then
-        translate_focus = playdate.geometry.vector2D.newPolar(outer_radius * scale, outer_angle)
-    elseif playdate.buttonIsPressed(playdate.kButtonB) then
-        translate_focus = playdate.geometry.vector2D.newPolar(inner_radius * scale, inner_angle)
-    end
-    
+--    if playdate.buttonIsPressed(playdate.kButtonA) then
+--        translate_focus = playdate.geometry.vector2D.newPolar(outer_radius * scale, outer_angle)
+--    elseif playdate.buttonIsPressed(playdate.kButtonB) then
+--        translate_focus = playdate.geometry.vector2D.newPolar(inner_radius * scale, inner_angle)
+--    end
+  
 
     gfx.setLineWidth(1)
     transform:scale(scale)
