@@ -134,17 +134,11 @@ function playdate.update()
         gfx.drawLine(tickLine)
 
         if label and string.len(label) > 0 then
-            local font_v = playdate.geometry.vector2D.newPolar(label_radius_fudge, theta_deg)
-
             local text_width, text_height = gfx.getTextSize(label)
-            
-            local font_height_fudge = math.sin(theta_rad / 2.0) * text_height
-            local font_width_fudge = math.sin(theta_rad) * text_width
-
-            local p = playdate.geometry.point.new(start_p.x - font_width_fudge + font_v.x, start_p.y - font_height_fudge + font_v.y)
+            local label_pos = playdate.geometry.vector2D.newPolar(circle_r - (5 * length_factor) - 2 + label_radius_fudge, theta_deg)
+            local p = playdate.geometry.point.new(label_pos.x, label_pos.y)
             transform:transformPoint(p)
-
-            gfx.drawTextAligned(label, p.x, p.y, kTextAlignment.center)
+            gfx.drawTextAligned(label, p.x, p.y - text_height / 2, kTextAlignment.center)
         end
     end
 
@@ -219,6 +213,40 @@ function playdate.update()
         gfx.drawLine(hairline)
     end
 
+    local function drawHairValues(inner_radius, outer_radius, transform)
+        local total_angle = 330
+
+        local function valueForAxis(axis_name, angle_frac)
+            if axis_name == "x" or axis_name == "pi" then
+                return base ^ angle_frac
+            elseif axis_name == "x^2" then
+                return base ^ (angle_frac * 2)
+            elseif axis_name == "lin" then
+                return angle_frac * base
+            end
+        end
+
+        local function drawValueLabel(axis_name, rotate_angle, radius, label_offset)
+            local eff_angle = (hair_angle - rotate_angle) % 360
+            if eff_angle > total_angle then return end
+
+            local angle_frac = eff_angle / total_angle
+            local value = valueForAxis(axis_name, angle_frac)
+            if value == nil then return end
+
+            local label = string.format("%.2f", value)
+            local text_width, text_height = gfx.getTextSize(label)
+
+            local pos = playdate.geometry.vector2D.newPolar(radius + label_offset, hair_angle)
+            local p = playdate.geometry.point.new(pos.x, pos.y)
+            transform:transformPoint(p)
+            gfx.drawTextAligned(label, p.x, p.y - text_height / 2, kTextAlignment.center)
+        end
+
+        drawValueLabel(outer_axis, outer_angle, outer_radius, 6)
+        drawValueLabel(inner_axis, inner_angle, inner_radius, -12)
+    end
+
     local function drawCalculator(inner_radius, outer_radius, transform)
 
         local total_angle = 330
@@ -277,6 +305,7 @@ function playdate.update()
     transform:scale(scale)
     gfx.setDrawOffset(main_width + 0.5 * (w - main_width) - translate_focus.dx, h/2 - translate_focus.dy)
     drawCalculator(inner_radius, outer_radius, transform)
+    drawHairValues(inner_radius, outer_radius, transform)
 --    gfx.sprite.update()
     playdate.timer.updateTimers()
 
