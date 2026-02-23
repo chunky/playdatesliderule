@@ -15,8 +15,7 @@ local inner_angle = 0
 local hair_angle = 0
 
 local axes = {
-    {
-        name = "x",
+    x = {
         scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * base  -- t goes 0, 0.1, 0.2, ..., 1.0 → v goes 0, 1, 2, ..., 10
@@ -27,8 +26,7 @@ local axes = {
         end,
         inverse = function(angle_frac) return base ^ angle_frac end,
     },
-    {
-        name = "1/x",
+    ["1/x"] = {
         scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * base
@@ -37,8 +35,7 @@ local axes = {
         end,
         inverse = function(angle_frac) return base ^ (1 - angle_frac) end,
     },
-    {
-        name = "x^2",
+    ["x^2"] = {
         scaled_max = function() return 2 end,
         forward = function(t)
             local v = t * base^2  -- t goes 0, 0.1, ..., 1.0 → v goes 0, 10, 20, ..., 100
@@ -49,8 +46,7 @@ local axes = {
         end,
         inverse = function(angle_frac) return base ^ (angle_frac * 2) end,
     },
-    {
-        name = "x^3",
+    ["x^3"] = {
         scaled_max = function() return 3 end,
         forward = function(t)
             local v = t * base^3
@@ -59,8 +55,7 @@ local axes = {
         end,
         inverse = function(angle_frac) return base ^ (angle_frac * 3) end,
     },
-    {
-        name = "lin",
+    lin = {
         scaled_max = function() return base end,
         forward = function(t)
             local v = playdate.math.lerp(0.0, base, t)
@@ -68,8 +63,7 @@ local axes = {
         end,
         inverse = function(angle_frac) return angle_frac * base end,
     },
-    {
-        name = "pi",
+    pi = {
         scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * base  -- same as x scale
@@ -80,8 +74,7 @@ local axes = {
         end,
         inverse = function(angle_frac) return base ^ angle_frac end,
     },
-    {
-        name = "sin",
+    sin = {
         scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * 90  -- degrees, 0 to 90
@@ -94,8 +87,7 @@ local axes = {
             return math.deg(math.asin(sv))
         end,
     },
-    {
-        name = "cos",
+    cos = {
         scaled_max = function() return 1 end,
         forward = function(t)
             local v = (1 - t) * 90  -- degrees, 90 down to 0 (cos scale runs in reverse)
@@ -110,8 +102,7 @@ local axes = {
             return math.deg(math.acos(cv))
         end,
     },
-    {
-        name = "tan",
+    tan = {
         scaled_max = function() return 1 end,
         forward = function(t)
             local v = t * 45  -- degrees, 0 to 45
@@ -124,36 +115,35 @@ local axes = {
     },
 }
 
-local axis_options = {}
-local axes_by_name = {}
-for _, a in ipairs(axes) do
-    axis_options[#axis_options+1] = a.name
-    axes_by_name[a.name] = a
+local axis_names = {}
+for name, axis in pairs(axes) do
+    axis_names[#axis_names+1] = name
+    axis.name = name
 
     -- Implement value caching
-    local forward_orig = a.forward
+    local forward_orig = axis.forward
     local cache = {}
     function forward_memoised(t)
-        t_key = string.format("%.2f", t)
+        local t_key = string.format("%.2f", t)
         if cache[t_key] then
-            tuple = cache[t_key]
+            local tuple = cache[t_key]
             return tuple[1], tuple[2]
         else
-            a, b = forward_orig(t)
-            tuple = {a, b}
+            local a, b = forward_orig(t)
+            local tuple = {a, b}
             cache[t_key] = tuple
             return a, b
         end
     end
-    a.forward = forward_memoised
+    axis.forward = forward_memoised
 end
 
-local outer_axis = axes[1]
-local inner_axis = axes[1]
+local outer_axis = axes.x
+local inner_axis = axes.x
 
 function test_func(axis)
-    if type(axis) == "string" then axis = axes_by_name[axis] end
-    local f = axis.func
+    if type(axis) == "string" then axis = axes[axis] end
+    local f = axis.forward
     for t=0.0, 1.01, 0.1 do
         local x_scaled, x = f(t)
         print("Axis " .. axis.name .. " t=" .. t .. "  x_scaled=" .. x_scaled .. "   x=" .. x)
@@ -165,8 +155,8 @@ function reset_settings()
     inner_angle = 0
     outer_angle = 0
     hair_angle = 0
-    inner_axis = axes[1]
-    outer_axis = axes[1]
+    inner_axis = axes.x
+    outer_axis = axes.x
 end
 
 function myGameSetUp()
@@ -176,8 +166,8 @@ function myGameSetUp()
     local menu = playdate.getSystemMenu()
     menu:addMenuItem("Reset", function() reset_settings() end)
 
-    menu:addOptionsMenuItem("Outer Axis", axis_options, outer_axis.name, function(newval) outer_axis = axes_by_name[newval] end)
-    menu:addOptionsMenuItem("Inner Axis", axis_options, inner_axis.name, function(newval) inner_axis = axes_by_name[newval] end)
+    menu:addOptionsMenuItem("Outer Axis", axis_names, outer_axis.name, function(newval) outer_axis = axes[newval] end)
+    menu:addOptionsMenuItem("Inner Axis", axis_names, inner_axis.name, function(newval) inner_axis = axes[newval] end)
 
     local myInputHandlers = {
 
