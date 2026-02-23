@@ -139,7 +139,7 @@ for name, axis in pairs(axes) do
 end
 
 local fonts = {
-    ["Default"] = "Fonts/font-rains-1x",
+    ["Large"] = "Fonts/font-rains-1x",
     ["Small"] = "Fonts/Nano Sans"
 }
 
@@ -147,8 +147,7 @@ local font_names = {}
 for name, f in pairs(fonts) do
     font_names[#font_names+1] = name
 end
-local selected_font = font_names[1]
-
+local selected_font = "Small"
 
 local outer_axis = axes.x
 local inner_axis = axes.x
@@ -344,11 +343,44 @@ function playdate.update()
             gfx.setColor(gfx.kColorWhite)
             gfx.fillRect(p.x - text_width / 2 - pad, text_y - pad, text_width + pad * 2, cap_height + pad * 2)
             gfx.setColor(gfx.kColorBlack)
+            gfx.drawRect(p.x - text_width / 2 - pad, text_y - pad, text_width + pad * 2, cap_height + pad * 2)
             gfx.drawTextAligned(label, p.x, text_y, kTextAlignment.center)
         end
 
         drawValueLabel(outer_axis, outer_angle, outer_radius, 6)
         drawValueLabel(inner_axis, inner_angle, inner_radius, -12)
+    end
+
+    local function drawIndexValues(inner_radius, outer_radius, transform)
+        local total_angle = 330
+
+        local function drawIndexLabel(read_axis, read_angle, read_radius, label_offset, at_angle)
+            local eff = (at_angle - read_angle) % 360
+            if eff > total_angle then return end
+            local value = read_axis.inverse(eff / total_angle)
+            if value == nil then return end
+
+            local label = string.format("%.2f", value)
+            local text_width = gfx.getTextSize(label)
+            local cap_height = math.ceil(gfx.getFont():getHeight() * 0.7)
+
+            local pos = playdate.geometry.vector2D.newPolar(read_radius + label_offset, at_angle)
+            local p = playdate.geometry.point.new(pos.x, pos.y)
+            transform:transformPoint(p)
+
+            local text_y = p.y - cap_height / 2
+            local pad = 3
+            gfx.setColor(gfx.kColorWhite)
+            gfx.fillRect(p.x - text_width / 2 - pad, text_y - pad, text_width + pad * 2, cap_height + pad * 2)
+            gfx.setColor(gfx.kColorBlack)
+            gfx.drawRect(p.x - text_width / 2 - pad, text_y - pad, text_width + pad * 2, cap_height + pad * 2)
+            gfx.drawTextAligned(label, p.x, text_y, kTextAlignment.center)
+        end
+
+        -- What does the outer axis read at the inner axis's start?
+        drawIndexLabel(outer_axis, outer_angle, outer_radius, 12, inner_angle)
+        -- What does the inner axis read at the outer axis's start?
+        drawIndexLabel(inner_axis, inner_angle, inner_radius, -20, outer_angle)
     end
 
     local function drawAxisLabel(name, radius, rotate_angle, transform)
@@ -394,6 +426,7 @@ function playdate.update()
 
     gfx.setLineWidth(1)
     drawCalculator(inner_radius, outer_radius, transform)
+    drawIndexValues(inner_radius, outer_radius, transform)
 
     gfx.clearClipRect()
     gfx.setDrawOffset(0, 0)
