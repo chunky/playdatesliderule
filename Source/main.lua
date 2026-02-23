@@ -267,13 +267,23 @@ function playdate.update()
         drawValueLabel(inner_axis, inner_angle, inner_radius, -12)
     end
 
+    local function drawAxisLabel(name, radius, rotate_angle, transform)
+        local text_width, text_height = gfx.getTextSize(name)
+        local label_pos = playdate.geometry.vector2D.newPolar(radius - 12, rotate_angle)
+        local p = playdate.geometry.point.new(label_pos.x, label_pos.y)
+        transform:transformPoint(p)
+        gfx.drawTextAligned(name, p.x, p.y - text_height / 2, kTextAlignment.center)
+    end
+
     local function drawCalculator(inner_radius, outer_radius, transform)
 
         local total_angle = 330
 
         drawAxis(outer_axis.func, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxisLabel(outer_axis.name, outer_radius, outer_angle, transform)
 
         drawAxis(inner_axis.func, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxisLabel(inner_axis.name, inner_radius, inner_angle, transform)
 
         drawHair(outer_radius + 10, hair_angle, transform)
     end
