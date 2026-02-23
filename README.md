@@ -2,7 +2,27 @@
 
 ## What?
 
-It's a slide rule.
+It's a circular slide rule for the playdate
+
+## Action Shots
+
+*Can do math!* 2.32 * 2.82 = 6.54:
+
+<img src="actionshots/2.32x2.82.png">
+
+*Accessible!* Has large fonts for anyone old enough to use slide rules:
+
+<img src="actionshots/1.32x2.38_large.png">
+
+*Highly configurable!* Choose axes as well as fonts:
+
+<img src="actionshots/axis_chooser.png">
+
+## How do I use it?
+
+* Use the crank to turn the hairline
+* Hold A, B when turning the crank to rotate those axes instead
+* Multiple Axes supported: x, x^2, x^3, 1/x, linear, sin/cos/tan
 
 ## Why?
 
@@ -20,7 +40,8 @@ used slide rules to do maths: https://en.wikipedia.org/wiki/Slide_rule
 
 ## Why, Again?
 
-Because slide rules are awesome.
+Because slide rules are awesome. And the playdate's crank is clearly
+designed for controlling a circular slide rule
 
 ## Fonts
 
