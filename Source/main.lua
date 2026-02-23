@@ -14,43 +14,66 @@ local outer_angle = 0
 local inner_angle = 0
 local hair_angle = 0
 
-local axis_options = { "x", "x^2", "lin", "pi" }
-local outer_axis = axis_options[1]
-local inner_axis = axis_options[1]
-
-local axis_funcs = {
-    ["x"] = function(t)
-        local v = t * base  -- t goes 0, 0.1, 0.2, ..., 1.0 → v goes 0, 1, 2, ..., 10
-        if v < 0.5 then
-            return -1, v  -- skip values below 0.5 (they would round to 0)
-        end
-        return math.log(v, base), v  -- logarithmic position, integer values
-    end,
-    ["x^2"] = function(t)
-        local v = t * base^2  -- t goes 0, 0.1, ..., 1.0 → v goes 0, 10, 20, ..., 100
-        if v < 0.5 then
-            return -1, v  -- skip values below 0.5
-        end
-        return math.log(v, base), v  -- logarithmic position
-    end,
-    ["lin"] = function(t)
-        local v = playdate.math.lerp(0.0, base, t)
-        return v, v
-    end,
-    ["pi"] = function(t)
-        local v = t * base  -- same as x scale
-        if v < 0.5 or v > math.pi then
-            return -1, v  -- only show values from 1 to π (approximately 1, 2, 3)
-        end
-        return math.log(v, base), v  -- logarithmic position
-    end 
+local axes = {
+    {
+        name = "x",
+        func = function(t)
+            local v = t * base  -- t goes 0, 0.1, 0.2, ..., 1.0 → v goes 0, 1, 2, ..., 10
+            if v < 0.5 then
+                return -1, v  -- skip values below 0.5 (they would round to 0)
+            end
+            return math.log(v, base), v  -- logarithmic position, integer values
+        end,
+        inverse = function(angle_frac) return base ^ angle_frac end,
+    },
+    {
+        name = "x^2",
+        func = function(t)
+            local v = t * base^2  -- t goes 0, 0.1, ..., 1.0 → v goes 0, 10, 20, ..., 100
+            if v < 0.5 then
+                return -1, v  -- skip values below 0.5
+            end
+            return math.log(v, base), v  -- logarithmic position
+        end,
+        inverse = function(angle_frac) return base ^ (angle_frac * 2) end,
+    },
+    {
+        name = "lin",
+        func = function(t)
+            local v = playdate.math.lerp(0.0, base, t)
+            return v, v
+        end,
+        inverse = function(angle_frac) return angle_frac * base end,
+    },
+    {
+        name = "pi",
+        func = function(t)
+            local v = t * base  -- same as x scale
+            if v < 0.5 or v > math.pi then
+                return -1, v  -- only show values from 1 to π (approximately 1, 2, 3)
+            end
+            return math.log(v, base), v  -- logarithmic position
+        end,
+        inverse = function(angle_frac) return base ^ angle_frac end,
+    },
 }
 
-function test_func(axis_name)
-    local f = axis_funcs[axis_name]
+local axis_options = {}
+local axes_by_name = {}
+for _, a in ipairs(axes) do
+    axis_options[#axis_options+1] = a.name
+    axes_by_name[a.name] = a
+end
+
+local outer_axis = axes[1]
+local inner_axis = axes[1]
+
+function test_func(axis)
+    if type(axis) == "string" then axis = axes_by_name[axis] end
+    local f = axis.func
     for t=0.0, 1.01, 0.1 do
         local x_scaled, x = f(t)
-        print("Axis " .. axis_name .. " t=" .. t .. "  x_scaled=" .. x_scaled .. "   x=" .. x)
+        print("Axis " .. axis.name .. " t=" .. t .. "  x_scaled=" .. x_scaled .. "   x=" .. x)
     end
 end
 
@@ -59,8 +82,8 @@ function reset_settings()
     inner_angle = 0
     outer_angle = 0
     hair_angle = 0
-    inner_axis = axis_options[1]
-    outer_axis = axis_options[1]
+    inner_axis = axes[1]
+    outer_axis = axes[1]
 end
 
 function myGameSetUp()
@@ -70,8 +93,8 @@ function myGameSetUp()
     local menu = playdate.getSystemMenu()
     menu:addMenuItem("Reset", function() reset_settings() end)
 
-    menu:addOptionsMenuItem("Outer Axis", axis_options, outer_axis, function(newval) outer_axis = newval end)
-    menu:addOptionsMenuItem("Inner Axis", axis_options, inner_axis, function(newval) inner_axis = newval end)
+    menu:addOptionsMenuItem("Outer Axis", axis_options, outer_axis.name, function(newval) outer_axis = axes_by_name[newval] end)
+    menu:addOptionsMenuItem("Inner Axis", axis_options, inner_axis.name, function(newval) inner_axis = axes_by_name[newval] end)
 
     local myInputHandlers = {
 
@@ -216,22 +239,12 @@ function playdate.update()
     local function drawHairValues(inner_radius, outer_radius, transform)
         local total_angle = 330
 
-        local function valueForAxis(axis_name, angle_frac)
-            if axis_name == "x" or axis_name == "pi" then
-                return base ^ angle_frac
-            elseif axis_name == "x^2" then
-                return base ^ (angle_frac * 2)
-            elseif axis_name == "lin" then
-                return angle_frac * base
-            end
-        end
-
-        local function drawValueLabel(axis_name, rotate_angle, radius, label_offset)
+        local function drawValueLabel(axis, rotate_angle, radius, label_offset)
             local eff_angle = (hair_angle - rotate_angle) % 360
             if eff_angle > total_angle then return end
 
             local angle_frac = eff_angle / total_angle
-            local value = valueForAxis(axis_name, angle_frac)
+            local value = axis.inverse(angle_frac)
             if value == nil then return end
 
             local label = string.format("%.2f", value)
@@ -258,11 +271,9 @@ function playdate.update()
 
         local total_angle = 330
 
-        local o_func = axis_funcs[outer_axis]
-        drawAxis(o_func, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxis(outer_axis.func, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform)
 
-        local i_func = axis_funcs[inner_axis]
-        drawAxis(i_func, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxis(inner_axis.func, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform)
 
         drawHair(outer_radius + 10, hair_angle, transform)
     end
