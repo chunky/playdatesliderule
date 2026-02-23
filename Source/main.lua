@@ -206,7 +206,7 @@ function playdate.update()
 
     -- Fill in the axes for values in range min to max
     -- Valuefunc converts values in the range 0..1 to scaled axis numbers 
-    local function drawAxis(t_func, circle_r, rotate_angle, t_min, t_max, full_max_angle, depth, transform)
+    local function drawAxis(t_func, circle_r, rotate_angle, t_min, t_max, full_max_angle, depth, transform, label_radius_fudge)
 
         if 0 == depth then
             -- Transforms don't work on arcs, but they do on polys.
@@ -253,13 +253,13 @@ function playdate.update()
 
                 local value_angle = full_max_angle * (scaled_v) / (scaled_max_v)
 
-                drawAxis(t_func, circle_r, rotate_angle, last_t, t, full_max_angle, depth+1, transform)
+                drawAxis(t_func, circle_r, rotate_angle, last_t, t, full_max_angle, depth+1, transform, label_radius_fudge)
                 
                 local strlabel = nil
                 if 0 >= depth then
                     strlabel = string.format("%.0f", v * base^(depth))
                 end
-                drawTick(value_angle, circle_r, strlabel, 0, rotate_angle, 2.0 / (depth + 2), transform)
+                drawTick(value_angle, circle_r, strlabel, label_radius_fudge, rotate_angle, 2.0 / (depth + 2), transform)
 
                 last_t = t
             end
@@ -308,20 +308,20 @@ function playdate.update()
 
     local function drawAxisLabel(name, radius, rotate_angle, transform)
         local text_width, text_height = gfx.getTextSize(name)
-        local label_pos = playdate.geometry.vector2D.newPolar(radius - 12, rotate_angle)
+        local label_pos = playdate.geometry.vector2D.newPolar(radius - 2, rotate_angle - 2)
         local p = playdate.geometry.point.new(label_pos.x, label_pos.y)
         transform:transformPoint(p)
-        gfx.drawTextAligned(name, p.x, p.y - text_height / 2, kTextAlignment.center)
+        gfx.drawTextAligned(name, p.x, p.y - text_height / 2, kTextAlignment.right)
     end
 
     local function drawCalculator(inner_radius, outer_radius, transform)
 
         local total_angle = 330
 
-        drawAxis(outer_axis.forward, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxis(outer_axis.forward, outer_radius, outer_angle, 0.0, 1.0, total_angle, 0, transform, 15)
         drawAxisLabel(outer_axis.name, outer_radius, outer_angle, transform)
 
-        drawAxis(inner_axis.forward, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform)
+        drawAxis(inner_axis.forward, inner_radius, inner_angle, 0.0, 1.0, total_angle, 0, transform, -10)
         drawAxisLabel(inner_axis.name, inner_radius, inner_angle, transform)
 
         drawHair(outer_radius + 10, hair_angle, transform)
@@ -337,7 +337,7 @@ function playdate.update()
     local center_y = h/2
 
     local main_radius = math.min(h/2, w/2)
-    local outer_radius = main_radius-8
+    local outer_radius = main_radius-20
     local inner_radius = main_radius-40
 
     local main_width = h
