@@ -138,6 +138,18 @@ for name, axis in pairs(axes) do
     axis.forward = forward_memoised
 end
 
+local fonts = {
+    ["Default"] = "Fonts/font-rains-1x",
+    ["Small"] = "Fonts/Nano Sans"
+}
+
+local font_names = {}
+for name, f in pairs(fonts) do
+    font_names[#font_names+1] = name
+end
+local selected_font = font_names[1]
+
+
 local outer_axis = axes.x
 local inner_axis = axes.x
 
@@ -160,14 +172,16 @@ function reset_settings()
 end
 
 function myGameSetUp()
-    local myfont = gfx.font.new("Fonts/font-rains-1x")
+    local myfont = gfx.font.new(fonts[selected_font])
     gfx.setFont(myfont)
 
     local menu = playdate.getSystemMenu()
-    menu:addMenuItem("Reset", function() reset_settings() end)
+--    menu:addMenuItem("Reset", function() reset_settings() end)
 
     menu:addOptionsMenuItem("Outer Axis", axis_names, outer_axis.name, function(newval) outer_axis = axes[newval] end)
     menu:addOptionsMenuItem("Inner Axis", axis_names, inner_axis.name, function(newval) inner_axis = axes[newval] end)
+    
+    menu:addOptionsMenuItem("Font", font_names, selected_font, function(newval) selected_font = newval gfx.setFont(gfx.font.new(fonts[selected_font])) end)
 
     local myInputHandlers = {
 
