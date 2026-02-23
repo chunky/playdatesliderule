@@ -235,12 +235,19 @@ function playdate.update()
             if value == nil then return end
 
             local label = string.format("%.2f", value)
-            local text_width, text_height = gfx.getTextSize(label)
+            local text_width = gfx.getTextSize(label)
+            local cap_height = math.ceil(gfx.getFont():getHeight() * 0.7)
 
             local pos = playdate.geometry.vector2D.newPolar(radius + label_offset, hair_angle)
             local p = playdate.geometry.point.new(pos.x, pos.y)
             transform:transformPoint(p)
-            gfx.drawTextAligned(label, p.x, p.y - text_height / 2, kTextAlignment.center)
+
+            local text_y = p.y - cap_height / 2
+            local pad = 3
+            gfx.setColor(gfx.kColorWhite)
+            gfx.fillRect(p.x - text_width / 2 - pad, text_y - pad, text_width + pad * 2, cap_height + pad * 2)
+            gfx.setColor(gfx.kColorBlack)
+            gfx.drawTextAligned(label, p.x, text_y, kTextAlignment.center)
         end
 
         drawValueLabel(outer_axis, outer_angle, outer_radius, 6)
