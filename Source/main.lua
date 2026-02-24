@@ -5,6 +5,7 @@ import "CoreLibs/timer"
 import "CoreLibs/math"
 
 local gfx <const> = playdate.graphics
+local geo <const> = playdate.geometry
 
 -- Global variable pile-on!
 local default_base = 10
@@ -235,17 +236,17 @@ function playdate.update()
         end
         local theta_rad = math.rad(theta_deg)
         
-        local start_p = playdate.geometry.vector2D.newPolar(circle_r-(5 * length_factor), theta_deg)
-        local end_p = playdate.geometry.vector2D.newPolar(circle_r+(2 * length_factor), theta_deg)
+        local start_p = geo.vector2D.newPolar(circle_r-(5 * length_factor), theta_deg)
+        local end_p = geo.vector2D.newPolar(circle_r+(2 * length_factor), theta_deg)
 
-        local tickLine = playdate.geometry.lineSegment.new(start_p.x, start_p.y, end_p.x, end_p.y)
+        local tickLine = geo.lineSegment.new(start_p.x, start_p.y, end_p.x, end_p.y)
         transform:transformLineSegment(tickLine)
         gfx.drawLine(tickLine)
 
         if label and string.len(label) > 0 then
             local text_width, text_height = gfx.getTextSize(label)
-            local label_pos = playdate.geometry.vector2D.newPolar(circle_r - (5 * length_factor) - 2 + label_radius_fudge, theta_deg)
-            local p = playdate.geometry.point.new(label_pos.x, label_pos.y)
+            local label_pos = geo.vector2D.newPolar(circle_r - (5 * length_factor) - 2 + label_radius_fudge, theta_deg)
+            local p = geo.point.new(label_pos.x, label_pos.y)
             transform:transformPoint(p)
             gfx.drawTextAligned(label, p.x, p.y - text_height / 2, kTextAlignment.center)
         end
@@ -257,7 +258,7 @@ function playdate.update()
 
         if 0 == depth then
             -- Transforms don't work on arcs, but they do on polys.
-            local arc = playdate.geometry.arc.new(0.0, 0.0, circle_r, rotate_angle, full_max_angle + rotate_angle)
+            local arc = geo.arc.new(0.0, 0.0, circle_r, rotate_angle, full_max_angle + rotate_angle)
             local est_px_along_edge = circle_r * 2 * math.pi * (full_max_angle / 360.0)
             local arc_poly = {}
             local n_edge_samples = 50
@@ -265,7 +266,7 @@ function playdate.update()
                 local p = arc:pointOnArc(i * est_px_along_edge / n_edge_samples)
                 arc_poly[#arc_poly+1] = p
             end
-            local poly = playdate.geometry.polygon.new(table.unpack(arc_poly))
+            local poly = geo.polygon.new(table.unpack(arc_poly))
             transform:transformPolygon(poly)
             gfx.drawPolygon(poly)
         end
@@ -312,9 +313,9 @@ function playdate.update()
 
     local function drawHair(circle_r, hair_angle, transform)
         local hair_radius = circle_r + 10
-        local hair_v = playdate.geometry.vector2D.newPolar(hair_radius, hair_angle)
+        local hair_v = geo.vector2D.newPolar(hair_radius, hair_angle)
         local hair_end = hair_v
-        local hairline = playdate.geometry.lineSegment.new(0.0, 0.0, hair_end.x, hair_end.y)
+        local hairline = geo.lineSegment.new(0.0, 0.0, hair_end.x, hair_end.y)
         transform:transformLineSegment(hairline)
         local saved_width = gfx.getLineWidth()
         gfx.setColor(gfx.kColorWhite)
@@ -340,8 +341,8 @@ function playdate.update()
             local text_width = gfx.getTextSize(label)
             local cap_height = math.ceil(gfx.getFont():getHeight() * 0.7)
 
-            local pos = playdate.geometry.vector2D.newPolar(radius + label_offset, hair_angle)
-            local p = playdate.geometry.point.new(pos.x, pos.y)
+            local pos = geo.vector2D.newPolar(radius + label_offset, hair_angle)
+            local p = geo.point.new(pos.x, pos.y)
             transform:transformPoint(p)
 
             local text_y = p.y - cap_height / 2
@@ -370,8 +371,8 @@ function playdate.update()
             local text_width = gfx.getTextSize(label)
             local cap_height = math.ceil(gfx.getFont():getHeight() * 0.7)
 
-            local pos = playdate.geometry.vector2D.newPolar(read_radius + label_offset, at_angle)
-            local p = playdate.geometry.point.new(pos.x, pos.y)
+            local pos = geo.vector2D.newPolar(read_radius + label_offset, at_angle)
+            local p = geo.point.new(pos.x, pos.y)
             transform:transformPoint(p)
 
             local text_y = p.y - cap_height / 2
@@ -391,8 +392,8 @@ function playdate.update()
 
     local function drawAxisLabel(name, radius, rotate_angle, transform)
         local text_width, text_height = gfx.getTextSize(name)
-        local label_pos = playdate.geometry.vector2D.newPolar(radius - 2, rotate_angle - 2)
-        local p = playdate.geometry.point.new(label_pos.x, label_pos.y)
+        local label_pos = geo.vector2D.newPolar(radius - 2, rotate_angle - 2)
+        local p = geo.point.new(label_pos.x, label_pos.y)
         transform:transformPoint(p)
         gfx.drawTextAligned(name, p.x, p.y - text_height / 2, kTextAlignment.right)
     end
@@ -410,14 +411,14 @@ function playdate.update()
         -- Brand in the center
         local brand = "Playdate\n\nSlide Rule"
         local bw, bh = gfx.getTextSize(brand)
-        local center = playdate.geometry.point.new(0, 0)
+        local center = geo.point.new(0, 0)
         transform:transformPoint(center)
         gfx.drawTextAligned(brand, center.x, center.y - bh / 2, kTextAlignment.center)
 
         drawHair(outer_radius + 10, hair_angle, transform)
     end
 
-    playdate.graphics.clear()
+    gfx.clear()
 
 
     local h = playdate.display.getHeight()
@@ -432,7 +433,7 @@ function playdate.update()
 
     local main_width = h
 
-    local transform = playdate.geometry.affineTransform.new()
+    local transform = geo.affineTransform.new()
     gfx.setDrawOffset(h/2, h/2)
     -- Draw the main one
     gfx.setScreenClipRect(0, 0, main_width, h)
@@ -451,11 +452,11 @@ function playdate.update()
 
     local scale = 2.0
 
-    local translate_focus = playdate.geometry.vector2D.newPolar(((inner_radius + outer_radius) / 2.0) * scale, hair_angle)
+    local translate_focus = geo.vector2D.newPolar(((inner_radius + outer_radius) / 2.0) * scale, hair_angle)
 --    if playdate.buttonIsPressed(playdate.kButtonA) then
---        translate_focus = playdate.geometry.vector2D.newPolar(outer_radius * scale, outer_angle)
+--        translate_focus = geo.vector2D.newPolar(outer_radius * scale, outer_angle)
 --    elseif playdate.buttonIsPressed(playdate.kButtonB) then
---        translate_focus = playdate.geometry.vector2D.newPolar(inner_radius * scale, inner_angle)
+--        translate_focus = geo.vector2D.newPolar(inner_radius * scale, inner_angle)
 --    end
   
 
